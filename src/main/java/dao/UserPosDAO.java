@@ -7,7 +7,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Test;
+
 import conexaojdbc.SingleConnection;
+import model.BeanUserFone;
 import model.Telefone;
 import model.Userposjava;
 
@@ -41,8 +44,17 @@ public class UserPosDAO {
 		}
 	}
 	
+	
 	public void salvarTelefone(Telefone telefone) {
 		try {
+			String sql = "INSERT INTO telefoneuser(numero, tipo, usuariopessoa) VALUES (?,?,?);";
+			PreparedStatement statement = connection.prepareStatement(sql);
+			statement.setString(1, telefone.getNumero());
+			statement.setString(2, telefone.getTipo());
+			statement.setLong(3, telefone.getUsuario());
+			
+			statement.execute();
+			connection.commit();
 			
 		} catch (Exception e) {
 			try {
@@ -91,6 +103,34 @@ public class UserPosDAO {
 
 		return retorno;
 	}
+	
+	public List<BeanUserFone> listaUserFone (Long idUser){
+		List<BeanUserFone> beanUserFones = new ArrayList<BeanUserFone>();
+		
+		String sql = " select nome, numero, email from telefoneuser as fone ";
+		sql += " inner join userposjava as userp ";
+		sql += " on fone.usuariopessoa = userp.id ";
+		sql += " where userp.id = " + idUser;
+		
+		
+		try {
+			PreparedStatement statement = connection.prepareStatement(sql);
+			ResultSet resultSet = statement.executeQuery();
+			
+			while(resultSet.next()) {
+				BeanUserFone userFone = new BeanUserFone();
+				userFone.setNome(resultSet.getString("nome"));
+				userFone.setEmail(resultSet.getString("email"));
+				userFone.setNumero(resultSet.getString("numero"));
+				
+				beanUserFones.add(userFone);
+			}
+		} catch (SQLException e) {
+		e.printStackTrace();
+		}
+		
+		return beanUserFones;
+	}
 
 	public void atualizar(Userposjava userposjava) {
 
@@ -127,6 +167,31 @@ public class UserPosDAO {
 				e2.printStackTrace();
 			}
 			e.printStackTrace();
+		}
+	}
+	public void deleteFonesPorUser(Long idUser) {
+	
+		
+		try {
+			String sqlFone = "delete from telefoneuser where usuariopessoa =" + idUser;
+			String sqlUser = "delete from userposjava where id =" + idUser;
+			
+			PreparedStatement preparedStatement = connection.prepareStatement(sqlFone);
+			preparedStatement.executeUpdate();
+			connection.commit();
+			
+			preparedStatement = connection.prepareStatement(sqlUser);
+			preparedStatement.executeUpdate();
+			connection.commit();
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+			try {
+				connection.rollback();
+			} catch (SQLException e1) {
+				
+				e1.printStackTrace();
+			}
 		}
 	}
 }
